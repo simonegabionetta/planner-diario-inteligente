@@ -12,7 +12,7 @@ import { History, Bell } from 'lucide-react';
 export default function Home() {
   const [, setLocation] = useLocation();
   const today = new Date().toISOString().split('T')[0];
-  const { tasks, currentTask, nextTask, createTask, updateTaskStatus, removeTask, editTask } = useTasks(today);
+  const { tasks, currentTask, nextTask, createTask, startTask, updateTaskStatus, removeTask, editTask } = useTasks(today);
   const { triggerAlarm } = useAlarms(tasks, { enabled: true });
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -25,14 +25,24 @@ export default function Home() {
 
   useEffect(() => {
     tasks.forEach(task => {
+      // Alarme quando tarefa começa
       if (task.status === 'not-started') {
         const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         if (task.startTime === now) {
           triggerAlarm(task);
         }
       }
+      // Alarme quando tarefa termina
+      if (task.status === 'in-progress') {
+        const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        if (task.endTime === now) {
+          triggerAlarm(task);
+          // Automaticamente marca como não concluída se não foi marcada como concluída
+          updateTaskStatus(task.id, 'not-completed');
+        }
+      }
     });
-  }, [tasks, triggerAlarm]);
+  }, [tasks, triggerAlarm, updateTaskStatus]);
 
   const handleAddTask = (taskData: any) => {
     createTask({
@@ -40,6 +50,10 @@ export default function Home() {
       status: 'not-started',
       date: today,
     });
+  };
+
+  const handleStartTask = (id: string) => {
+    startTask(id);
   };
 
   const handleStatusChange = (id: string, status: Task['status']) => {
@@ -124,6 +138,7 @@ export default function Home() {
                       key={task.id}
                       task={task}
                       isCurrent={task.id === currentTask?.id}
+                      onStart={() => handleStartTask(task.id)}
                       onStatusChange={(status) => handleStatusChange(task.id, status)}
                       onEdit={() => handleEditTask(task.id)}
                       onDelete={() => handleDeleteTask(task.id)}

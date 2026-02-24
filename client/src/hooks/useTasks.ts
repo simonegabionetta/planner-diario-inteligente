@@ -14,8 +14,8 @@ export function useTasks(date: string) {
     };
 
     loadTasks();
-    // Recarregar a cada minuto para atualizar tarefas atuais
-    const interval = setInterval(loadTasks, 60000);
+    // Recarregar a cada segundo para atualizar tarefas atuais em tempo real
+    const interval = setInterval(loadTasks, 1000);
     return () => clearInterval(interval);
   }, [date]);
 
@@ -28,7 +28,8 @@ export function useTasks(date: string) {
     };
 
     updateCurrentTasks();
-    const interval = setInterval(updateCurrentTasks, 60000);
+    // Atualizar a cada segundo para sincronização em tempo real
+    const interval = setInterval(updateCurrentTasks, 1000);
     return () => clearInterval(interval);
   }, [date]);
 
@@ -36,6 +37,14 @@ export function useTasks(date: string) {
     const newTask = addTask(taskData);
     setTasks(prev => [...prev, newTask].sort((a, b) => a.startTime.localeCompare(b.startTime)));
     return newTask;
+  }, []);
+
+  const startTask = useCallback((id: string) => {
+    const updated = updateTask(id, { status: 'in-progress' });
+    if (updated) {
+      setTasks(prev => prev.map(t => t.id === id ? updated : t));
+    }
+    return updated;
   }, []);
 
   const updateTaskStatus = useCallback((id: string, status: Task['status']) => {
@@ -67,6 +76,7 @@ export function useTasks(date: string) {
     currentTask,
     nextTask,
     createTask,
+    startTask,
     updateTaskStatus,
     removeTask,
     editTask,

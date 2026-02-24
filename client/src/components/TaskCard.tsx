@@ -1,10 +1,12 @@
 import { Task } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
-import { Trash2, Edit2, CheckCircle2, Circle, Minus } from 'lucide-react';
+import { Trash2, Edit2, CheckCircle2, Circle, Minus, Play } from 'lucide-react';
+import { useTaskTimer, formatTime } from '@/hooks/useTaskTimer';
 
 interface TaskCardProps {
   task: Task;
   onStatusChange: (status: Task['status']) => void;
+  onStart: () => void;
   onEdit: () => void;
   onDelete: () => void;
   isCurrent?: boolean;
@@ -29,10 +31,12 @@ const statusColors: Record<Task['status'], string> = {
 export function TaskCard({
   task,
   onStatusChange,
+  onStart,
   onEdit,
   onDelete,
   isCurrent = false,
 }: TaskCardProps) {
+  const timerInfo = useTaskTimer(task.status === 'in-progress' ? task : null);
   const borderStyle = isCurrent ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md';
   
   return (
@@ -46,6 +50,19 @@ export function TaskCard({
           <p className="text-sm text-muted-foreground">
             {task.startTime} - {task.endTime}
           </p>
+          {task.status === 'in-progress' && timerInfo.isActive && (
+            <div className="mt-2">
+              <div className="text-sm font-medium text-blue-600 mb-1">
+                Tempo decorrido: {formatTime(timerInfo.timeElapsed)} | Faltam: {formatTime(timerInfo.timeRemaining)}
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${timerInfo.percentage}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
         </div>
         <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${statusColors[task.status]}`}>
           {statusLabels[task.status]}
@@ -53,6 +70,17 @@ export function TaskCard({
       </div>
 
       <div className="flex gap-2">
+        {task.status === 'not-started' && (
+          <Button
+            size="sm"
+            variant="default"
+            onClick={onStart}
+            className="flex-1 gap-1 bg-green-600 hover:bg-green-700"
+          >
+            <Play className="w-4 h-4" />
+            <span className="hidden sm:inline">Iniciar</span>
+          </Button>
+        )}
         <Button
           size="sm"
           variant={task.status === 'not-started' ? 'default' : 'outline'}
